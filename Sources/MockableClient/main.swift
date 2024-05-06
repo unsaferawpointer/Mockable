@@ -1,8 +1,15 @@
+
 import Mockable
 
-let a = 17
-let b = 25
+@MockableMacro
+protocol MyTestProtocol {
+	func functionWithoutParameters()
+	func functionWithUnnamedParameters(_ value: Int)
+	func functionWithParameters(_ value: Int, _ value2: inout String?)
+	func functionWithParameters(value: String, value2 innerValue2: String) -> String
+	func functionWithParametersHasOptionalReturnClause(value: String, value2 innerValue2: String) -> String?
+	func functionWithCompletionBlock(_ block: @escaping () -> Void) async
+	func functionWithCompletionBlock(_ block: @escaping () -> Void)
+}
 
-let (result, code) = #stringify(a + b)
-
-print("The value \(result) was produced by the code \"\(code)\"")
+let mock = MyTestProtocolMock()
