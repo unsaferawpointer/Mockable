@@ -13,9 +13,12 @@ struct Configuration {
 
 	private (set) var stub: Stub
 
-	init(action: Action, stub: Stub) {
+	private (set) var errors: Errors
+
+	init(action: Action, stub: Stub, errors: Errors) {
 		self.action = action
 		self.stub = stub
+		self.errors = errors
 	}
 }
 
@@ -27,6 +30,11 @@ extension Configuration {
 	}
 
 	struct Stub {
+		let type: String
+		let variable: String
+	}
+
+	struct Errors {
 		let type: String
 		let variable: String
 	}
@@ -42,6 +50,14 @@ extension Configuration.Stub {
 
 // MARK: - Computed properties for Action
 extension Configuration.Action {
+
+	var token: TokenSyntax {
+		return .identifier(type)
+	}
+}
+
+// MARK: - Computed properties for Errors
+extension Configuration.Errors {
 
 	var token: TokenSyntax {
 		return .identifier(type)

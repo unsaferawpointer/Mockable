@@ -16,20 +16,25 @@ extension DataFactory {
 		let nameResolver = NameResolver()
 
 		var map: [FunctionSignatureSyntax: Int] = [:]
-		var cases: [CaseWrapper] = []
+		var cases: [FunctionData] = []
 
 		for (index, function) in functions.enumerated() {
 
-			let newName = nameResolver.resolve(function.name)
+			let name = nameResolver.resolve(function.name)
 			let parameters = makeParameters(from: function)
 
-			let caseWrapper = CaseWrapper(
-				name: newName,
+			let throwsError = function.signature.effectSpecifiers?.throwsSpecifier != nil
+			let isAsync = function.signature.effectSpecifiers?.asyncSpecifier != nil
+
+			let functionData = FunctionData(
+				name: name,
+				isAsync: isAsync,
+				throwsError: throwsError,
 				parameters: parameters
 			)
 
 			map[function.signature] = index
-			cases.append(caseWrapper)
+			cases.append(functionData)
 		}
 
 		return MacrosData(map: map, cases: cases)
@@ -50,13 +55,13 @@ private extension DataFactory {
 
 			let isLast = parameters.count - 1 == index
 
-			let parameterName = nameResolver.resolve(parameter.usedName)
+			let name = nameResolver.resolve(parameter.usedName)
 
 			// Skip attributes
 			let type = parameter.type.as(AttributedTypeSyntax.self)?.baseType ?? parameter.type
 
 			let element = Parameter(
-				name: parameterName,
+				name: name,
 				type: type,
 				isLast: isLast
 			)

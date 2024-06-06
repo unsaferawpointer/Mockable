@@ -25,7 +25,7 @@ extension ActionFactory: ActionFactoryProtocol {
 
 		let data = DataFactory().makeData(from: functions)
 
-		let members = data.cases.compactMap { wrapper in
+		let members = data.functions.compactMap { wrapper in
 			let parameters = wrapper.parameters.map {
 				EnumCaseParameterSyntax(
 					firstName: $0.name,

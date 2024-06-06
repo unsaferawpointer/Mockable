@@ -18,7 +18,8 @@ public struct MockableMacro: PeerMacro {
 
 		let configuration = Configuration(
 			action: .init(type: "Action", variable: "invocations"),
-			stub: .init(type: "Stubs", variable: "stubs")
+			stub: .init(type: "Stubs", variable: "stubs"), 
+			errors: .init(type: "Errors", variable: "errors")
 		)
 
 		// MARK: - End configuration
@@ -32,8 +33,12 @@ public struct MockableMacro: PeerMacro {
 		var members = MemberBlockItemListSyntax()
 		members.append(MemberBlockItemSyntax(decl: ActionFactory.makeVariable(with: configuration.action)))
 		members.append(MemberBlockItemSyntax(decl: StubFactory.makeVariable(with: configuration.stub)))
+		members.append(MemberBlockItemSyntax(decl: ErrorsFactory.makeVariable(with: configuration.errors)))
+
+
 		members.append(MemberBlockItemSyntax(decl: ActionFactory.makeEnum(from: functions, with: configuration.action)))
-		members.append(MemberBlockItemSyntax(decl: makeStubs(for: functions, with: DataFactory().makeData(from: functions))))
+		members.append(MemberBlockItemSyntax(decl: StubFactory.makeStubs(for: functions, with:  DataFactory().makeData(from: functions))))
+		members.append(MemberBlockItemSyntax(decl: ErrorsFactory.makeStruct(for: functions, with:  DataFactory().makeData(from: functions))))
 
 		for implementation in implementations {
 			members.append(MemberBlockItemSyntax(decl: implementation))
@@ -65,53 +70,6 @@ extension MockableMacro {
 		return functions.contains {
 			$0.signature.returnClause != nil
 		}
-	}
-
-	static func makeStubs(for functions: [FunctionDeclSyntax], with data: MacrosData) -> StructDeclSyntax {
-
-		var result: [VariableDeclSyntax] = []
-
-		for function in functions {
-
-			guard let type = function.signature.returnClause?.type else {
-				continue
-			}
-
-			let name = data[function.signature].name
-			let identifier = IdentifierPatternSyntax(identifier: name)
-
-			let resultType: TypeSyntaxProtocol = type.is(OptionalTypeSyntax.self) ? type : OptionalTypeSyntax(wrappedType: type)
-
-			let typeAnnotation = TypeAnnotationSyntax(
-				colon: .colonToken(),
-				type: resultType
-			)
-
-			let pattern = PatternBindingSyntax(
-				pattern: identifier,
-				typeAnnotation: typeAnnotation
-			)
-
-			let variable = VariableDeclSyntax(
-				modifiers: DeclModifierListSyntax([]),
-				bindingSpecifier: .keyword(.var),
-				bindings: PatternBindingListSyntax([pattern])
-			)
-			result.append(variable)
-		}
-
-		let memberBlockItemList = MemberBlockItemListSyntax(
-			result.map {
-				MemberBlockItemSyntax(decl: $0)
-			}
-		)
-		let memberBlock = MemberBlockSyntax(members: memberBlockItemList)
-
-		return StructDeclSyntax(
-			structKeyword: .keyword(.struct),
-			name: .identifier("Stubs"),
-			memberBlock: memberBlock
-		)
 	}
 
 	static func createProtocolImplementation(for functions: [FunctionDeclSyntax], with data: MacrosData) -> [FunctionDeclSyntax] {
@@ -162,6 +120,10 @@ extension MockableMacro {
 					arguments: labeledExprList,
 					rightParen: .rightParenToken()
 				)
+			}
+
+			if function.signature.effectSpecifiers?.throwsSpecifier != nil {
+				body.append(makeIfBlock(for: function, with: data))
 			}
 
 			if function.signature.returnClause != nil {
@@ -245,6 +207,42 @@ extension MockableMacro {
 			additionalTrailingClosures: .init([])
 		)
 		let item = CodeBlockItemSyntax(item: .init(funtionCall))
+		let statements = CodeBlockItemListSyntax([item])
+		return CodeBlockSyntax(statements: statements)
+	}
+
+	static func makeIfBlock(for function: FunctionDeclSyntax, with data: MacrosData) -> CodeBlockItemSyntax {
+		let identifierPattern = IdentifierPatternSyntax(identifier: .identifier("error"))
+
+		let errors = DeclReferenceExprSyntax(baseName: .identifier("errors"))
+		let functionCall = DeclReferenceExprSyntax(baseName: data[function.signature].name)
+
+		let memberAccessExprSyntax = MemberAccessExprSyntax(base: errors, period: .periodToken(), declName: functionCall)
+
+		let initializer = InitializerClauseSyntax(
+			equal: .equalToken(), value: memberAccessExprSyntax)
+
+		let condition = OptionalBindingConditionSyntax(bindingSpecifier: .keyword(.let), pattern: identifierPattern, initializer: initializer)
+
+		let conditionElement = ConditionElementSyntax(condition: .optionalBinding(condition))
+		let conditionElementListSyntax = ConditionElementListSyntax([conditionElement])
+
+		let expression = IfExprSyntax(
+			ifKeyword: .keyword(.if),
+			conditions: conditionElementListSyntax,
+			body: makeIfBlockInside()
+		)
+
+		let item = ExpressionStmtSyntax(expression: expression)
+
+		return CodeBlockItemSyntax(item: .init(item))
+	}
+
+	static func makeIfBlockInside() -> CodeBlockSyntax {
+
+		let expression = DeclReferenceExprSyntax(baseName: .identifier("error"))
+		let throwStmt = ThrowStmtSyntax(expression: expression)
+		let item = CodeBlockItemSyntax(item: .init(throwStmt))
 		let statements = CodeBlockItemListSyntax([item])
 		return CodeBlockSyntax(statements: statements)
 	}

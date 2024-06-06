@@ -1,33 +1,43 @@
 //
-//  StubFactory.swift
-//  
+//  ErrorsFactory.swift
 //
-//  Created by Anton Cherkasov on 26.05.2024.
+//
+//  Created by Anton Cherkasov on 06.06.2024.
 //
 
 import SwiftSyntax
 
-final class StubFactory { }
+protocol ErrorsFactoryProtocol {
+	static func makeVariable(with configuration: Configuration.Errors) -> VariableDeclSyntax
+}
 
-extension StubFactory {
+final class ErrorsFactory {
 
-	static func makeStubs(for functions: [FunctionDeclSyntax], with data: MacrosData) -> StructDeclSyntax {
+}
+
+// MARK: - ErrorsFactoryProtocol
+extension ErrorsFactory: ErrorsFactoryProtocol {
+
+	static func makeStruct(
+		for functions: [FunctionDeclSyntax],
+		with data: MacrosData,
+		configuration: Configuration.Errors
+	) -> StructDeclSyntax {
+
 		var result: [VariableDeclSyntax] = []
 
 		for function in functions {
 
-			guard let type = function.signature.returnClause?.type else {
+			guard function.signature.effectSpecifiers?.throwsSpecifier != nil else {
 				continue
 			}
 
 			let name = data[function.signature].name
 			let identifier = IdentifierPatternSyntax(identifier: name)
 
-			let resultType: TypeSyntaxProtocol = type.is(OptionalTypeSyntax.self) ? type : OptionalTypeSyntax(wrappedType: type)
-
 			let typeAnnotation = TypeAnnotationSyntax(
 				colon: .colonToken(),
-				type: resultType
+				type: OptionalTypeSyntax(wrappedType: IdentifierTypeSyntax(name: .identifier("Error")))
 			)
 
 			let pattern = PatternBindingSyntax(
@@ -52,18 +62,18 @@ extension StubFactory {
 
 		return StructDeclSyntax(
 			structKeyword: .keyword(.struct),
-			name: .identifier("Stubs"),
+			name: configuration.token,
 			memberBlock: memberBlock
 		)
 	}
 
-	static func makeVariable(with configuration: Configuration.Stub) -> VariableDeclSyntax {
+	static func makeVariable(with configuration: Configuration.Errors) -> VariableDeclSyntax {
 
 		let identifier = IdentifierPatternSyntax(identifier: .identifier(configuration.variable))
 
-		let stubType = IdentifierTypeSyntax(name: configuration.token)
+		let errorsType = IdentifierTypeSyntax(name: configuration.token)
 
-		let type = TypeAnnotationSyntax(type: stubType)
+		let type = TypeAnnotationSyntax(type: errorsType)
 
 		let functionCallExprSyntax = FunctionCallExprSyntax(
 			calledExpression: DeclReferenceExprSyntax(baseName: .identifier(configuration.type)),
