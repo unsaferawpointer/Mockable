@@ -1,5 +1,5 @@
 //
-//  ActionFactory.swift
+//  ActionsFactory.swift
 //
 //
 //  Created by Anton Cherkasov on 10.05.2024.
@@ -8,20 +8,16 @@
 import SwiftSyntax
 
 protocol ActionFactoryProtocol {
-	static func makeEnum(from functions: [FunctionDeclSyntax], with configration: Configuration.Action) -> EnumDeclSyntax
+	static func makeStruct(from functions: [FunctionDeclSyntax], with configration: Configuration.Action) -> EnumDeclSyntax
 	static func makeVariable(with configration: Configuration.Action) -> VariableDeclSyntax
 }
 
-final class ActionFactory { }
+final class ActionsFactory { }
 
 // MARK: - ActionFactoryProtocol
-extension ActionFactory: ActionFactoryProtocol {
+extension ActionsFactory: ActionFactoryProtocol {
 
-	static func makeStorage(from functions: [FunctionDeclSyntax]) -> MacrosData {
-		DataFactory().makeData(from: functions)
-	}
-
-	static func makeEnum(from functions: [FunctionDeclSyntax], with configration: Configuration.Action) -> EnumDeclSyntax {
+	static func makeStruct(from functions: [FunctionDeclSyntax], with configration: Configuration.Action) -> EnumDeclSyntax {
 
 		let data = DataFactory().makeData(from: functions)
 
