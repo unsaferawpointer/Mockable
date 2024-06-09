@@ -1,14 +1,16 @@
 
 import Mockable
+import Foundation
 
 @MockableMacro
 protocol MyTestProtocol {
-	func functionWithoutParameters()
+
+	func functionWithoutParameters(_ t: String)
 	func functionWithUnnamedParameters(_ value: Int)
-	func functionWithParameters(_ value: Int, _ value2: inout String?) -> Int?
-	func functionWithParameters(value: String, value2 innerValue2: String) -> Int
-	func functionWithParametersHasOptionalReturnClause(value: String, value2 innerValue2: String)
-	func functionWithCompletionBlock(_ block: @escaping () -> Void) async
+	func functionWithParameters(outerValue1 innerValue1: Int, _ innerValue2: inout String?) -> Int?
+	func functionWithParameters(value1: String, outerValue2 innerValue2: String) -> Int
+	func functionWithParametersHasOptionalReturnClause(value: String, value2 innerValue2: String) -> Double?
+	func functionWithCompletionBlock(_ block: @escaping () -> Void) async -> UUID
 	func functionWithCompletionBlock(_ block: @escaping () -> Void) throws
 }
 

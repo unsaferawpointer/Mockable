@@ -10,9 +10,8 @@ public struct MockableMacro: PeerMacro {
 		providingPeersOf declaration: some DeclSyntaxProtocol,
 		in context: some MacroExpansionContext
 	) throws -> [DeclSyntax] {
-		guard let protocolDeclaration = declaration.as(ProtocolDeclSyntax.self) else {
-			throw MockableError.isNotAProtocol
-		}
+
+		let protocolDeclaration = try ValidationManager.validate(decl: declaration)
 
 		// MARK: - Start configuration
 
@@ -132,7 +131,7 @@ private extension MockableMacro {
 			let labeledExprList = LabeledExprListSyntax([lebeledExpr])
 
 			let declName = DeclReferenceExprSyntax(baseName: .identifier("append"))
-			let baseName = DeclReferenceExprSyntax(baseName: .identifier("invocations"))
+			let baseName = DeclReferenceExprSyntax(baseName: .identifier(configuration.action.variable))
 			let memberAccess = MemberAccessExprSyntax(base: baseName, declName: declName)
 
 			var body = CodeBlockItemListSyntax {
